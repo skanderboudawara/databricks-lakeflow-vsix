@@ -1,0 +1,84 @@
+{
+  "name": "databricks-job-viewer",
+  "publisher": "local",
+  "displayName": "Databricks Job Viewer",
+  "description": "Visual DAG viewer for Databricks job YAML workflow files",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/resources/**/*.yml",
+    "workspaceContains:databricks.yml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "databricksJobViewer.openDag",
+        "title": "Open Job DAG"
+      },
+      {
+        "command": "databricksJobViewer.refresh",
+        "title": "Refresh Jobs",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "databricksJobViewer.openFile",
+        "title": "Open YAML File",
+        "icon": "$(go-to-file)"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "databricks-jobs",
+          "title": "Databricks Jobs",
+          "icon": "$(circuit-board)"
+        }
+      ]
+    },
+    "views": {
+      "databricks-jobs": [
+        {
+          "id": "databricksJobsTree",
+          "name": "Job Workflows"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "databricksJobViewer.refresh",
+          "when": "view == databricksJobsTree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "databricksJobViewer.openFile",
+          "when": "view == databricksJobsTree && viewItem == job",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.7.1",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}
