@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write   # needed to upload assets to the release
+
+jobs:
+  build-and-attach:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile TypeScript
+        run: npm run compile
+
+      - name: Package extension
+        run: npx @vscode/vsce package --no-dependencies
+        # produces databricks-job-viewer-<version>.vsix
+
+      - name: Find VSIX filename
+        id: vsix
+        run: echo "file=$(ls *.vsix)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload VSIX to release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.vsix.outputs.file }}

@@ -4,6 +4,15 @@
   "displayName": "Databricks Job Viewer",
   "description": "Visual DAG viewer for Databricks job YAML workflow files",
   "version": "0.1.0",
+  "author": {
+    "name": "Skander Boudawara",
+    "email": "skander.education@proton.me"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skanderboudawara/databricks-lakeflow-vsix"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
