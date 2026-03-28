@@ -69,6 +69,16 @@ class JobNode extends vscode.TreeItem {
   }
 }
 
+function fuzzyMatch(query: string, target: string): boolean {
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+  let qi = 0;
+  for (let i = 0; i < t.length && qi < q.length; i++) {
+    if (t[i] === q[qi]) { qi++; }
+  }
+  return qi === q.length;
+}
+
 /**
  * Tree data provider for the Databricks Jobs sidebar view.
  * Organizes jobs by category (app_jobs / etl_jobs) and sub-category (folder name).
@@ -78,6 +88,8 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
   private rootNodes: CategoryNode[] = [];
+  private allJobs: JobDefinition[] = [];
+  private filterQuery = '';
   private loading = false;
 
   constructor(private readonly parser: JobParser) {
@@ -88,6 +100,15 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     this.loadJobs();
   }
 
+  setFilter(query: string): void {
+    this.filterQuery = query.trim();
+    this._onDidChangeTreeData.fire(null);
+  }
+
+  getFilter(): string {
+    return this.filterQuery;
+  }
+
   getTreeItem(element: TreeNode): vscode.TreeItem {
     return element;
   }
@@ -95,6 +116,13 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
   getChildren(element?: TreeNode): vscode.ProviderResult<TreeNode[]> {
     if (this.loading) {
       return [];
+    }
+
+    // Filtered mode: flat list of matching jobs (no category grouping)
+    if (!element && this.filterQuery) {
+      return this.allJobs
+        .filter((job) => fuzzyMatch(this.filterQuery, job.name))
+        .map((job) => new JobNode(job));
     }
 
     if (!element) {
@@ -117,6 +145,7 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     this._onDidChangeTreeData.fire(null);
 
     const jobs = await this.parser.findAllJobs();
+    this.allJobs = jobs;
 
     // Group by category → subCategory
     const grouped = new Map<string, Map<string, JobDefinition[]>>();

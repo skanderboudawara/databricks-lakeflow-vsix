@@ -25,11 +25,6 @@
         "command": "databricksJobViewer.refresh",
         "title": "Refresh Jobs",
         "icon": "$(refresh)"
-      },
-      {
-        "command": "databricksJobViewer.openFile",
-        "title": "Open YAML File",
-        "icon": "$(go-to-file)"
       }
     ],
     "viewsContainers": {
@@ -44,6 +39,7 @@
     "views": {
       "databricks-jobs": [
         {
+          "type": "webview",
           "id": "databricksJobsTree",
           "name": "Job Workflows"
         }
@@ -55,13 +51,6 @@
           "command": "databricksJobViewer.refresh",
           "when": "view == databricksJobsTree",
           "group": "navigation"
-        }
-      ],
-      "view/item/context": [
-        {
-          "command": "databricksJobViewer.openFile",
-          "when": "view == databricksJobsTree && viewItem == job",
-          "group": "inline"
         }
       ]
     }

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx vsce:*)",
+      "Bash(node -e \":*)",
+      "Bash(node patch_dag.js)",
+      "Bash(node patch_dag2.js)",
+      "Bash(node patch_dag3.js)",
+      "Bash(node patch_dag4.js)",
+      "Bash(node:*)",
+      "Bash(cd:*)",
+      "Bash(ls -la *.vsix)"
+    ]
+  }
+}
