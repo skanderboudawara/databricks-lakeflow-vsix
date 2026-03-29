@@ -3,7 +3,7 @@
   "publisher": "skanderboudawara",
   "displayName": "Databricks Job Viewer",
   "description": "Visual DAG viewer for Databricks job YAML workflow files",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Skander Boudawara",
     "email": "skander.education@proton.me"
@@ -21,6 +21,7 @@
     "Other"
   ],
   "activationEvents": [
+    "onView:databricksJobsTree",
     "workspaceContains:**/resources/**/*.yml",
     "workspaceContains:databricks.yml"
   ],
@@ -66,7 +67,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run lint && npm run compile",
+    "vscode:prepublish": "npm run lint && npm run bundle",
+    "bundle": "esbuild ./src/extension.ts --bundle --outfile=out/extension.js --external:vscode --format=cjs --platform=node --sourcemap",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "lint": "eslint src/",
@@ -80,6 +82,7 @@
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.4",
     "eslint": "^9.39.4",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsdoc": "^62.8.1",

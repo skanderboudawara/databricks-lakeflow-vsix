@@ -67,10 +67,51 @@ export class JobWebviewProvider implements vscode.WebviewViewProvider {
     if (this.view) {
       this.view.webview.html = this.buildHtml(this.view.webview, null);
     }
-    this.jobs = await this.parser.findAllJobs();
+    try {
+      this.jobs = await this.parser.findAllJobs();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (this.view) {
+        this.view.webview.html = this.buildErrorHtml(this.view.webview, msg);
+      }
+      return;
+    }
     if (this.view) {
       this.view.webview.html = this.buildHtml(this.view.webview, this.jobs);
     }
+  }
+
+  /**
+   * Builds the full HTML document for the job-list webview.
+   * Resolves `media/job-webview.css` and `media/job-webview.js` to webview-safe URIs,
+   * enforces a strict Content Security Policy via a per-render nonce, and injects
+   * `window.__JOB_LIST__` so the external script can render without inline data.
+   * Pass `null` for `jobs` to render the initial loading state.
+   */
+  /**
+   * Builds a minimal error HTML page shown when job discovery throws an unexpected
+   * exception, so the sidebar never stays stuck on "Loading…".
+   */
+  private buildErrorHtml(webview: vscode.Webview, message: string): string {
+    const nonce = crypto.randomBytes(16).toString('hex');
+    const csp = `default-src 'none'; style-src 'nonce-${nonce}';`;
+    const safe = message.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return /* html */ `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="${csp}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style nonce="${nonce}">
+    body { font-family: var(--vscode-font-family); font-size: 12px; padding: 12px; color: var(--vscode-errorForeground); }
+    pre { white-space: pre-wrap; word-break: break-all; margin-top: 8px; font-size: 11px; color: var(--vscode-descriptionForeground); }
+  </style>
+</head>
+<body>
+  <strong>Failed to load jobs</strong>
+  <pre>${safe}</pre>
+</body>
+</html>`;
   }
 
   /**
