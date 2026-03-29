@@ -1,14 +1,20 @@
-import * as vscode from 'vscode';
 import * as path from 'path';
-import { JobParser, JobDefinition } from './jobParser';
+import * as vscode from 'vscode';
 
+import type { JobParser, JobDefinition } from './jobParser';
+
+/** Discriminated union of the three tree-item kinds used in the sidebar view. */
 type TreeNode = CategoryNode | SubCategoryNode | JobNode;
 
+/**
+ * Tree item representing a top-level job category (e.g. `App Jobs`, `ETL Jobs`).
+ * Starts expanded so users immediately see the sub-categories beneath it.
+ */
 class CategoryNode extends vscode.TreeItem {
   readonly kind = 'category';
   constructor(
     public readonly label: string,
-    public readonly children: SubCategoryNode[]
+    public readonly children: SubCategoryNode[],
   ) {
     super(label, vscode.TreeItemCollapsibleState.Expanded);
     this.iconPath = new vscode.ThemeIcon('folder');
@@ -16,11 +22,15 @@ class CategoryNode extends vscode.TreeItem {
   }
 }
 
+/**
+ * Tree item representing a sub-category folder within a category.
+ * Corresponds to the directory immediately beneath `resources/{app_jobs,etl_jobs}/`.
+ */
 class SubCategoryNode extends vscode.TreeItem {
   readonly kind = 'subcategory';
   constructor(
     public readonly label: string,
-    public readonly children: JobNode[]
+    public readonly children: JobNode[],
   ) {
     super(label, vscode.TreeItemCollapsibleState.Collapsed);
     this.iconPath = new vscode.ThemeIcon('folder-opened');
@@ -29,6 +39,10 @@ class SubCategoryNode extends vscode.TreeItem {
   }
 }
 
+/**
+ * Leaf tree item representing a single Databricks job.
+ * Clicking it triggers the `databricksJobViewer.openDag` command.
+ */
 class JobNode extends vscode.TreeItem {
   readonly kind = 'job';
   constructor(public readonly job: JobDefinition) {
@@ -44,11 +58,12 @@ class JobNode extends vscode.TreeItem {
     };
   }
 
+  /**
+   * Builds a Markdown tooltip summarising the job's task count, trigger type,
+   * optional timeout, and the base file name of the YAML source file.
+   */
   private buildTooltip(job: JobDefinition): vscode.MarkdownString {
-    const lines = [
-      `**${job.name}**`,
-      `Tasks: ${job.tasks.length}`,
-    ];
+    const lines = [`**${job.name}**`, `Tasks: ${job.tasks.length}`];
 
     if (job.trigger) {
       const triggerLabel = {
@@ -69,12 +84,18 @@ class JobNode extends vscode.TreeItem {
   }
 }
 
+/**
+ * Returns `true` if every character in `query` appears in `target` in order,
+ * using a case-insensitive subsequence match (fuzzy search).
+ */
 function fuzzyMatch(query: string, target: string): boolean {
   const q = query.toLowerCase();
   const t = target.toLowerCase();
   let qi = 0;
   for (let i = 0; i < t.length && qi < q.length; i++) {
-    if (t[i] === q[qi]) { qi++; }
+    if (t[i] === q[qi]) {
+      qi++;
+    }
   }
   return qi === q.length;
 }
@@ -96,23 +117,41 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     this.loadJobs();
   }
 
+  /**
+   * Re-loads all job files from disk and fires a tree-data-changed event
+   * to refresh the entire sidebar view.
+   */
   refresh(): void {
     this.loadJobs();
   }
 
+  /**
+   * Updates the fuzzy-search filter string and fires a tree-data-changed event
+   * so the view immediately re-renders showing only matching jobs.
+   */
   setFilter(query: string): void {
     this.filterQuery = query.trim();
     this._onDidChangeTreeData.fire(null);
   }
 
+  /** Returns the current fuzzy-search filter string. */
   getFilter(): string {
     return this.filterQuery;
   }
 
+  /**
+   * Returns the tree item for display.
+   * Elements are already `TreeItem` instances, so this is a direct pass-through.
+   */
   getTreeItem(element: TreeNode): vscode.TreeItem {
     return element;
   }
 
+  /**
+   * Returns the children for a given tree node.
+   * At the root level, returns all category nodes (or a flat filtered list when a
+   * search query is active). Delegates to the node's own `children` array otherwise.
+   */
   getChildren(element?: TreeNode): vscode.ProviderResult<TreeNode[]> {
     if (this.loading) {
       return [];
@@ -140,6 +179,11 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     return [];
   }
 
+  /**
+   * Discovers all job YAML files via the parser, groups them into a
+   * category → sub-category hierarchy, builds the `CategoryNode` tree,
+   * and fires a refresh event when done.
+   */
   private async loadJobs(): Promise<void> {
     this.loading = true;
     this._onDidChangeTreeData.fire(null);
@@ -166,9 +210,15 @@ export class JobTreeProvider implements vscode.TreeDataProvider<TreeNode> {
     const sortedCategories = [...grouped.keys()].sort((a, b) => {
       const ia = categoryOrder.indexOf(a);
       const ib = categoryOrder.indexOf(b);
-      if (ia >= 0 && ib >= 0) return ia - ib;
-      if (ia >= 0) return -1;
-      if (ib >= 0) return 1;
+      if (ia >= 0 && ib >= 0) {
+        return ia - ib;
+      }
+      if (ia >= 0) {
+        return -1;
+      }
+      if (ib >= 0) {
+        return 1;
+      }
       return a.localeCompare(b);
     });
 

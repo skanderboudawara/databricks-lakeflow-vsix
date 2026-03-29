@@ -3,11 +3,12 @@
   "publisher": "skanderboudawara",
   "displayName": "Databricks Job Viewer",
   "description": "Visual DAG viewer for Databricks job YAML workflow files",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": {
     "name": "Skander Boudawara",
     "email": "skander.education@proton.me"
   },
+  "icon": "icon.png",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -65,16 +66,26 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run lint && npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^20.0.0",
     "@types/vscode": "^1.85.0",
     "@vscode/vsce": "^3.7.1",
-    "typescript": "^5.3.0"
+    "eslint": "^9.39.4",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsdoc": "^62.8.1",
+    "prettier": "^3.8.1",
+    "typescript": "^5.3.0",
+    "typescript-eslint": "^8.57.2"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"
