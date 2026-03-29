@@ -1,0 +1,8 @@
+.vscode/**
+.github/**
+.claude/**
+src/**
+node_modules/**
+tsconfig.json
+package-lock.json
+*.vsix

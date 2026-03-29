@@ -200,7 +200,8 @@ export class DagPanel {
     .add-task-fab {
       position: absolute;
       bottom: 60px;
-      right: 14px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 36px;
       height: 36px;
       border-radius: 50%;
@@ -217,7 +218,7 @@ export class DagPanel {
       transition: background 0.15s, transform 0.1s;
       padding: 0;
     }
-    .add-task-fab:hover { background: #1a4a8c; transform: scale(1.08); }
+    .add-task-fab:hover { background: #1a4a8c; transform: translateX(-50%) scale(1.08); }
 
     /* ── New-task panel ─────────────────────────────────────────────────────── */
     .nt-section {
@@ -1252,26 +1253,6 @@ export class DagPanel {
         portsGroup.appendChild(portGrp);
       }
     }
-
-    // Port drag: mousedown on output ports
-    portsGroup.addEventListener('mousedown', function(e) {
-      var portGrp = e.target.closest('.port-grp');
-      if (!portGrp) return;
-      var portType = portGrp.dataset.portType;
-      if (portType === 'in') return;
-      e.stopPropagation();
-      e.preventDefault();
-      var taskKey = portGrp.dataset.portTask;
-      var pos2 = getPortPos(taskKey, portType);
-      if (!pos2) return;
-      var portColor = portType === 'out-true' ? '#4caf50' : portType === 'out-false' ? '#f44336' : '#546e7a';
-      draggingPort = { taskKey: taskKey, portType: portType, startX: pos2.x, startY: pos2.y };
-      ghostPath = el('path', {
-        stroke: portColor, 'stroke-width': '2', fill: 'none',
-        'stroke-dasharray': '7,4', opacity: '0.85', 'pointer-events': 'none',
-      });
-      overlayGroup.appendChild(ghostPath);
-    });
   }
 
   // ── Draw ─────────────────────────────────────────────────────────────────────
@@ -1291,49 +1272,50 @@ export class DagPanel {
       const p = pos[t.task_key];
       if (!p) continue;
       const c = nodeColors(t.type);
-      const g = el('g', { 'data-key': t.task_key, cursor:'pointer' });
+      // Group is positioned via translate so drag only needs to update the transform
+      const g = el('g', { 'data-key': t.task_key, cursor:'pointer', transform: \`translate(\${p.x},\${p.y})\` });
 
       if (t.type === 'condition') {
-        const cx=p.x+CS, cy=p.y+CS, s=CS-3;
+        const s=CS-3;
         g.appendChild(el('polygon', {
-          points: \`\${cx},\${cy-s} \${cx+s},\${cy} \${cx},\${cy+s} \${cx-s},\${cy}\`,
+          points: \`\${CS},\${CS-s} \${CS+s},\${CS} \${CS},\${CS+s} \${CS-s},\${CS}\`,
           fill:c.fill, stroke:c.stroke, 'stroke-width':'1.5',
         }));
         const opMap = {EQUAL_TO:'==', NOT_EQUAL_TO:'!=', GREATER_THAN:'>', LESS_THAN:'<'};
         g.appendChild(txt(opMap[t.condition?.op]||'?', {
-          x:cx, y:cy+4, fill:c.accent, 'font-size':'13', 'font-weight':'bold',
+          x:CS, y:CS+4, fill:c.accent, 'font-size':'13', 'font-weight':'bold',
           'text-anchor':'middle', 'pointer-events':'none',
         }));
         g.appendChild(txt(trunc(t.task_key,22), {
-          x:cx, y:p.y+CS*2+14, fill:'#aaa', 'font-size':'10',
+          x:CS, y:CS*2+14, fill:'#aaa', 'font-size':'10',
           'text-anchor':'middle', 'pointer-events':'none',
         }));
       } else {
         g.appendChild(el('rect', {
-          x:p.x, y:p.y, width:NW, height:NH, rx:'5',
+          x:0, y:0, width:NW, height:NH, rx:'5',
           fill:c.fill, stroke:c.stroke, 'stroke-width':'1.5',
           'stroke-dasharray': t._isPending ? '5,3' : null,
           opacity: t._isPending ? '0.75' : null,
         }));
         const typeLbl = {notebook:'NOTEBOOK',spark_python:'SPARK PYTHON',python_wheel:'PYTHON WHEEL',sql:'SQL',run_job:'RUN JOB'};
         g.appendChild(txt(typeLbl[t.type]||'', {
-          x:p.x+8, y:p.y+14, fill:c.accent, 'font-size':'9', 'font-weight':'600',
+          x:8, y:14, fill:c.accent, 'font-size':'9', 'font-weight':'600',
           'letter-spacing':'0.05em', 'pointer-events':'none',
         }));
         g.appendChild(txt(trunc(t.task_key,26), {
-          x:p.x+8, y:p.y+32, fill:'#e0e0e0', 'font-size':'11.5', 'font-weight':'500',
+          x:8, y:32, fill:'#e0e0e0', 'font-size':'11.5', 'font-weight':'500',
           'pointer-events':'none',
         }));
         if (t.notebook_path) {
           const parts = t.notebook_path.split('/');
           g.appendChild(txt(trunc(parts.slice(-2).join('/'),30), {
-            x:p.x+8, y:p.y+49, fill:'#666', 'font-size':'9.5', 'pointer-events':'none',
+            x:8, y:49, fill:'#666', 'font-size':'9.5', 'pointer-events':'none',
           }));
         }
         if (t.run_if) {
           const s = t.run_if==='AT_LEAST_ONE_SUCCESS' ? '≥1 ok' : t.run_if.replace(/_/g,' ').toLowerCase();
           g.appendChild(txt(s, {
-            x:p.x+NW-6, y:p.y+13, fill:'#666', 'font-size':'9',
+            x:NW-6, y:13, fill:'#666', 'font-size':'9',
             'text-anchor':'end', 'pointer-events':'none',
           }));
         }
@@ -1358,10 +1340,9 @@ export class DagPanel {
           e.stopPropagation();
           vscodeApi.postMessage({ command: 'openNotebook', notebookPath: t.notebook_path });
         });
-        // Small open-file indicator in top-right corner
-        const p = pos[t.task_key];
-        ng.appendChild(txt('↗', {
-          x: p.x + NW - 7, y: p.y + 13,
+        // Open-file indicator at top-right (relative coords since group is translated)
+        g.appendChild(txt('↗', {
+          x: NW - 7, y: 13,
           fill: '#4a9eff', 'font-size': '10', 'text-anchor': 'middle',
           'pointer-events': 'none', opacity: '0.5',
         }));
@@ -1382,6 +1363,26 @@ export class DagPanel {
     // Populate edges and ports
     redrawEdges();
     drawPorts();
+
+    // Port drag: mousedown on output ports — wired once per draw() so it never duplicates
+    portsGroup.addEventListener('mousedown', function(e) {
+      var portGrp = e.target.closest('.port-grp');
+      if (!portGrp) return;
+      var portType = portGrp.dataset.portType;
+      if (portType === 'in') return;
+      e.stopPropagation();
+      e.preventDefault();
+      var taskKey = portGrp.dataset.portTask;
+      var pos2 = getPortPos(taskKey, portType);
+      if (!pos2) return;
+      var portColor = portType === 'out-true' ? '#4caf50' : portType === 'out-false' ? '#f44336' : '#546e7a';
+      draggingPort = { taskKey: taskKey, portType: portType, startX: pos2.x, startY: pos2.y };
+      ghostPath = el('path', {
+        stroke: portColor, 'stroke-width': '2', fill: 'none',
+        'stroke-dasharray': '7,4', opacity: '0.85', 'pointer-events': 'none',
+      });
+      overlayGroup.appendChild(ghostPath);
+    });
 
     let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
     for (const p of Object.values(pos)) {
@@ -3005,10 +3006,10 @@ export class DagPanel {
         positions[draggingTask.taskKey].x = newX;
         positions[draggingTask.taskKey].y = newY;
         const svgGroup = zg.querySelector(\`[data-key="\${draggingTask.taskKey}"]\`);
-        if (svgGroup) svgGroup.setAttribute('transform', \`translate(\${dxSvg},\${dySvg})\`);
-        // Hide ports for dragged task (they're at old coords)
+        if (svgGroup) svgGroup.setAttribute('transform', \`translate(\${newX},\${newY})\`);
+        // Move ports with the card in real-time
         if (portsGroup) portsGroup.querySelectorAll(\`[data-port-task="\${draggingTask.taskKey}"]\`).forEach(function(pg) {
-          pg.setAttribute('opacity', '0');
+          pg.setAttribute('transform', \`translate(\${dxSvg},\${dySvg})\`);
         });
         redrawEdges();
       }

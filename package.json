@@ -1,9 +1,9 @@
 {
   "name": "databricks-job-viewer",
-  "publisher": "local",
+  "publisher": "skanderboudawara",
   "displayName": "Databricks Job Viewer",
   "description": "Visual DAG viewer for Databricks job YAML workflow files",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Skander Boudawara",
     "email": "skander.education@proton.me"
